@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jxc.module.stock.mapper.StockMapper">
+
+    <!-- 库存视图结果映射 -->
+    <resultMap id="stockVoMap" type="com.jxc.module.stock.vo.StockWarningVO">
+        <id property="id" column="id"/>
+        <result property="warehouseId" column="warehouse_id"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="productId" column="product_id"/>
+        <result property="productCode" column="product_code"/>
+        <result property="productName" column="product_name"/>
+        <result property="spec" column="spec"/>
+        <result property="unit" column="unit"/>
+        <result property="quantity" column="quantity"/>
+        <result property="minStock" column="min_stock"/>
+        <result property="maxStock" column="max_stock"/>
+        <result property="costPrice" column="cost_price"/>
+        <result property="warningType" column="warning_type"/>
+        <result property="totalStock" column="total_stock"/>
+    </resultMap>
+
+    <!-- 库存变动流水结果映射 -->
+    <resultMap id="stockFlowMap" type="com.jxc.module.stock.vo.StockFlowVO">
+        <result property="orderType" column="order_type"/>
+        <result property="orderTypeLabel" column="order_type_label"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="warehouseId" column="warehouse_id"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="productId" column="product_id"/>
+        <result property="productCode" column="product_code"/>
+        <result property="productName" column="product_name"/>
+        <result property="spec" column="spec"/>
+        <result property="unit" column="unit"/>
+        <result property="quantity" column="quantity"/>
+        <result property="direction" column="direction"/>
+        <result property="relatedWarehouseName" column="related_warehouse_name"/>
+        <result property="remark" column="remark"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <!-- 分页查询库存 -->
+    <select id="pageStock" resultMap="stockVoMap">
+        SELECT s.id, s.warehouse_id, w.warehouse_name, s.product_id, p.product_code,
+               p.product_name, p.spec, p.unit, s.quantity, p.min_stock, p.max_stock, p.cost_price,
+               (SELECT SUM(s2.quantity) FROM stock s2 WHERE s2.product_id = s.product_id AND s2.deleted = 0) AS total_stock
+        FROM stock s
+        LEFT JOIN warehouse w ON w.id = s.warehouse_id AND w.deleted = 0
+        LEFT JOIN product p ON p.id = s.product_id AND p.deleted = 0
+        WHERE s.deleted = 0
+        <if test="warehouseId != null">
+            AND s.warehouse_id = #{warehouseId}
+        </if>
+        <if test="productId != null">
+            AND s.product_id = #{productId}
+        </if>
+        <if test="productName != null and productName != ''">
+            AND p.product_name LIKE CONCAT('%', #{productName}, '%')
+        </if>
+        <if test="productCode != null and productCode != ''">
+            AND p.product_code LIKE CONCAT('%', #{productCode}, '%')
+        </if>
+        ORDER BY s.update_time DESC
+    </select>
+
+    <!-- 库存预警查询 -->
+    <select id="selectWarningList" resultMap="stockVoMap">
+        SELECT s.id, s.warehouse_id, w.warehouse_name, s.product_id, p.product_code,
+               p.product_name, p.spec, p.unit, s.quantity, p.min_stock, p.max_stock, p.cost_price,
+               CASE WHEN p.min_stock IS NOT NULL AND p.min_stock > 0 AND s.quantity &lt; p.min_stock THEN 1
+                    WHEN p.max_stock IS NOT NULL AND p.max_stock > 0 AND s.quantity &gt; p.max_stock THEN 2
+                    ELSE NULL END AS warning_type,
+               (SELECT SUM(s2.quantity) FROM stock s2 WHERE s2.product_id = s.product_id AND s2.deleted = 0) AS total_stock
+        FROM stock s
+        LEFT JOIN warehouse w ON w.id = s.warehouse_id AND w.deleted = 0
+        LEFT JOIN product p ON p.id = s.product_id AND p.deleted = 0
+        WHERE s.deleted = 0
+        AND (
+            (p.min_stock IS NOT NULL AND p.min_stock > 0 AND s.quantity &lt; p.min_stock)
+            OR
+            (p.max_stock IS NOT NULL AND p.max_stock > 0 AND s.quantity &gt; p.max_stock)
+        )
+        <if test="warehouseId != null">
+            AND s.warehouse_id = #{warehouseId}
+        </if>
+        ORDER BY
+            CASE WHEN p.min_stock IS NOT NULL AND p.min_stock > 0 AND s.quantity &lt; p.min_stock THEN 0 ELSE 1 END,
+            s.warehouse_id
+    </select>
+
+    <!-- 库存预警分页查询 -->
+    <select id="pageWarning" resultMap="stockVoMap">
+        SELECT s.id, s.warehouse_id, w.warehouse_name, s.product_id, p.product_code,
+               p.product_name, p.spec, p.unit, s.quantity, p.min_stock, p.max_stock, p.cost_price,
+               CASE WHEN p.min_stock IS NOT NULL AND p.min_stock > 0 AND s.quantity &lt; p.min_stock THEN 1
+                    WHEN p.max_stock IS NOT NULL AND p.max_stock > 0 AND s.quantity &gt; p.max_stock THEN 2
+                    ELSE NULL END AS warning_type,
+               (SELECT SUM(s2.quantity) FROM stock s2 WHERE s2.product_id = s.product_id AND s2.deleted = 0) AS total_stock
+        FROM stock s
+        LEFT JOIN warehouse w ON w.id = s.warehouse_id AND w.deleted = 0
+        LEFT JOIN product p ON p.id = s.product_id AND p.deleted = 0
+        WHERE s.deleted = 0
+        AND (
+            (p.min_stock IS NOT NULL AND p.min_stock > 0 AND s.quantity &lt; p.min_stock)
+            OR
+            (p.max_stock IS NOT NULL AND p.max_stock > 0 AND s.quantity &gt; p.max_stock)
+        )
+        <if test="warehouseId != null">
+            AND s.warehouse_id = #{warehouseId}
+        </if>
+        <if test="warningType != null">
+            <choose>
+                <when test="warningType == 1">
+                    AND p.min_stock IS NOT NULL AND p.min_stock > 0 AND s.quantity &lt; p.min_stock
+                </when>
+                <when test="warningType == 2">
+                    AND p.max_stock IS NOT NULL AND p.max_stock > 0 AND s.quantity &gt; p.max_stock
+                </when>
+            </choose>
+        </if>
+        ORDER BY
+            CASE WHEN p.min_stock IS NOT NULL AND p.min_stock > 0 AND s.quantity &lt; p.min_stock THEN 0 ELSE 1 END,
+            s.warehouse_id
+    </select>
+
+    <!--
+        分页查询库存变动流水
+        UNION 八类业务(均为已审核/已盘点):
+        - 采购入库(PO): 入库, 数量+
+        - 采购退货(PR): 出库, 数量-
+        - 销售出库(SO): 出库, 数量-
+        - 销售退货(SR): 入库, 数量+
+        - 调拨入库(TR): 入库, 数量+, related=调出仓库
+        - 调拨出库(TO): 出库, 数量-, related=调入仓库
+        - 盘盈入库(PY): 入库, 数量+, 单号=盘盈单号
+        - 盘亏出库(PL): 出库, 数量-, 单号=盘亏单号
+    -->
+    <select id="pageStockFlow" resultMap="stockFlowMap">
+        SELECT t.order_type, t.order_type_label, t.order_no, t.warehouse_id, t.warehouse_name,
+               t.product_id, t.product_code, t.product_name, t.spec, t.unit,
+               t.quantity, t.direction, t.related_warehouse_name, t.remark,
+               t.audit_time, t.create_time
+        FROM (
+            <!-- 采购入库: 数量+, 入库 -->
+            SELECT 'PO' AS order_type, '采购入库' AS order_type_label,
+                   po.order_no, po.warehouse_id, w.warehouse_name,
+                   pod.product_id, pod.product_code, pod.product_name, pod.spec, pod.unit,
+                   pod.quantity AS quantity, 'IN' AS direction, NULL AS related_warehouse_name,
+                   pod.remark, po.audit_time, po.create_time
+            FROM purchase_order po
+            INNER JOIN purchase_order_detail pod ON pod.order_id = po.id
+            LEFT JOIN warehouse w ON w.id = po.warehouse_id AND w.deleted = 0
+            WHERE po.deleted = 0 AND po.audit_status = 1 AND pod.product_id = #{productId}
+
+            UNION ALL
+
+            <!-- 采购退货: 数量-, 出库 -->
+            SELECT 'PR' AS order_type, '采购退货' AS order_type_label,
+                   pr.order_no, pr.warehouse_id, w.warehouse_name,
+                   prd.product_id, prd.product_code, prd.product_name, prd.spec, prd.unit,
+                   -prd.quantity AS quantity, 'OUT' AS direction, NULL AS related_warehouse_name,
+                   prd.remark, pr.audit_time, pr.create_time
+            FROM purchase_return_order pr
+            INNER JOIN purchase_return_order_detail prd ON prd.order_id = pr.id
+            LEFT JOIN warehouse w ON w.id = pr.warehouse_id AND w.deleted = 0
+            WHERE pr.deleted = 0 AND pr.audit_status = 1 AND prd.product_id = #{productId}
+
+            UNION ALL
+
+            <!-- 销售出库: 数量-, 出库 -->
+            SELECT 'SO' AS order_type, '销售出库' AS order_type_label,
+                   so.order_no, so.warehouse_id, w.warehouse_name,
+                   sod.product_id, sod.product_code, sod.product_name, sod.spec, sod.unit,
+                   -sod.quantity AS quantity, 'OUT' AS direction, NULL AS related_warehouse_name,
+                   sod.remark, so.audit_time, so.create_time
+            FROM sale_order so
+            INNER JOIN sale_order_detail sod ON sod.order_id = so.id
+            LEFT JOIN warehouse w ON w.id = so.warehouse_id AND w.deleted = 0
+            WHERE so.deleted = 0 AND so.audit_status = 1 AND sod.product_id = #{productId}
+
+            UNION ALL
+
+            <!-- 销售退货: 数量+, 入库 -->
+            SELECT 'SR' AS order_type, '销售退货' AS order_type_label,
+                   sr.order_no, sr.warehouse_id, w.warehouse_name,
+                   srd.product_id, srd.product_code, srd.product_name, srd.spec, srd.unit,
+                   srd.quantity AS quantity, 'IN' AS direction, NULL AS related_warehouse_name,
+                   srd.remark, sr.audit_time, sr.create_time
+            FROM sale_return_order sr
+            INNER JOIN sale_return_order_detail srd ON srd.order_id = sr.id
+            LEFT JOIN warehouse w ON w.id = sr.warehouse_id AND w.deleted = 0
+            WHERE sr.deleted = 0 AND sr.audit_status = 1 AND srd.product_id = #{productId}
+
+            UNION ALL
+
+            <!-- 调拨出库: 数量-, 出库, related=调入仓库 -->
+            SELECT 'TO' AS order_type, '调拨出库' AS order_type_label,
+                   st.order_no, st.from_warehouse_id AS warehouse_id, wf.warehouse_name,
+                   std.product_id, std.product_code, std.product_name, std.spec, std.unit,
+                   -std.quantity AS quantity, 'OUT' AS direction, wt.warehouse_name AS related_warehouse_name,
+                   std.remark, st.audit_time, st.create_time
+            FROM stock_transfer st
+            INNER JOIN stock_transfer_detail std ON std.order_id = st.id
+            LEFT JOIN warehouse wf ON wf.id = st.from_warehouse_id AND wf.deleted = 0
+            LEFT JOIN warehouse wt ON wt.id = st.to_warehouse_id AND wt.deleted = 0
+            WHERE st.deleted = 0 AND st.audit_status = 1 AND std.product_id = #{productId}
+
+            UNION ALL
+
+            <!-- 调拨入库: 数量+, 入库, related=调出仓库 -->
+            SELECT 'TR' AS order_type, '调拨入库' AS order_type_label,
+                   st.order_no, st.to_warehouse_id AS warehouse_id, wt.warehouse_name,
+                   std.product_id, std.product_code, std.product_name, std.spec, std.unit,
+                   std.quantity AS quantity, 'IN' AS direction, wf.warehouse_name AS related_warehouse_name,
+                   std.remark, st.audit_time, st.create_time
+            FROM stock_transfer st
+            INNER JOIN stock_transfer_detail std ON std.order_id = st.id
+            LEFT JOIN warehouse wf ON wf.id = st.from_warehouse_id AND wf.deleted = 0
+            LEFT JOIN warehouse wt ON wt.id = st.to_warehouse_id AND wt.deleted = 0
+            WHERE st.deleted = 0 AND st.audit_status = 1 AND std.product_id = #{productId}
+
+            UNION ALL
+
+            <!-- 盘盈入库: 数量+, 入库 -->
+            SELECT 'PY' AS order_type, '盘盈入库' AS order_type_label,
+                   sc.profit_order_no AS order_no, sc.warehouse_id, w.warehouse_name,
+                   scd.product_id, scd.product_code, scd.product_name, scd.spec, scd.unit,
+                   scd.difference AS quantity, 'IN' AS direction, NULL AS related_warehouse_name,
+                   scd.remark, sc.audit_time, sc.create_time
+            FROM stock_check sc
+            INNER JOIN stock_check_detail scd ON scd.order_id = sc.id
+            LEFT JOIN warehouse w ON w.id = sc.warehouse_id AND w.deleted = 0
+            WHERE sc.deleted = 0 AND sc.audit_status = 1
+              AND scd.difference &gt; 0 AND scd.product_id = #{productId}
+
+            UNION ALL
+
+            <!-- 盘亏出库: 数量-, 出库 -->
+            SELECT 'PL' AS order_type, '盘亏出库' AS order_type_label,
+                   sc.loss_order_no AS order_no, sc.warehouse_id, w.warehouse_name,
+                   scd.product_id, scd.product_code, scd.product_name, scd.spec, scd.unit,
+                   scd.difference AS quantity, 'OUT' AS direction, NULL AS related_warehouse_name,
+                   scd.remark, sc.audit_time, sc.create_time
+            FROM stock_check sc
+            INNER JOIN stock_check_detail scd ON scd.order_id = sc.id
+            LEFT JOIN warehouse w ON w.id = sc.warehouse_id AND w.deleted = 0
+            WHERE sc.deleted = 0 AND sc.audit_status = 1
+              AND scd.difference &lt; 0 AND scd.product_id = #{productId}
+        ) t
+        ORDER BY t.audit_time DESC
+    </select>
+
+    <!-- 账面库存结果映射(盘点自动带出) -->
+    <resultMap id="bookVoMap" type="com.jxc.module.stock.vo.StockBookVO">
+        <result property="warehouseId" column="warehouse_id"/>
+        <result property="warehouseName" column="warehouse_name"/>
+        <result property="productId" column="product_id"/>
+        <result property="productCode" column="product_code"/>
+        <result property="productName" column="product_name"/>
+        <result property="spec" column="spec"/>
+        <result property="unit" column="unit"/>
+        <result property="bookQuantity" column="book_quantity"/>
+    </resultMap>
+
+    <!-- 查询指定仓库的账面库存列表(含数量为0的记录),供盘点自动带出 -->
+    <select id="selectBookList" resultMap="bookVoMap">
+        SELECT s.warehouse_id, w.warehouse_name, s.product_id, p.product_code,
+               p.product_name, p.spec, p.unit, s.quantity AS book_quantity
+        FROM stock s
+        INNER JOIN product p ON p.id = s.product_id AND p.deleted = 0
+        LEFT JOIN warehouse w ON w.id = s.warehouse_id AND w.deleted = 0
+        WHERE s.deleted = 0 AND s.warehouse_id = #{warehouseId}
+        ORDER BY p.product_code ASC
+    </select>
+
+    <!-- 统计去重商品种类数(关联product表排除已删除商品,防止脏数据) -->
+    <select id="countProductCategory" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT s.product_id)
+        FROM stock s
+        INNER JOIN product p ON p.id = s.product_id AND p.deleted = 0
+        WHERE s.deleted = 0
+        <if test="warehouseId != null">
+            AND s.warehouse_id = #{warehouseId}
+        </if>
+    </select>
+
+</mapper>

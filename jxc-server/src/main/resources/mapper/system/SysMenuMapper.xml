@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jxc.module.system.mapper.SysMenuMapper">
+
+    <!-- 根据ID集合查询启用的菜单(已排除逻辑删除) -->
+    <select id="selectMenusByIds" resultType="com.jxc.module.system.entity.SysMenu">
+        SELECT id, parent_id, menu_name, menu_type, path, component, perms, icon, sort, visible, status
+        FROM sys_menu
+        WHERE deleted = 0 AND status = 1
+        AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY sort ASC, id ASC
+    </select>
+
+</mapper>

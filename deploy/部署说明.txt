@@ -1,0 +1,83 @@
+进销存管理系统 - 部署说明
+========================================
+
+【一、环境要求】
+  - JDK 1.8 (必需)
+  - MySQL 8.0 (必需, 数据库名 jxc_db, 字符集 utf8mb4)
+  - Nginx (推荐, 用于托管前端静态资源)
+
+【二、目录结构】
+  deploy/
+    jxc-server.jar        后端程序 (SpringBoot fat jar)
+    start.bat             Windows 启动脚本
+    web/dist/             前端静态资源 (Vue2 编译产物)
+    sql/jxc_db.sql        数据库初始化脚本
+    部署说明.txt          本文件
+
+【三、部署步骤】
+
+  1. 初始化数据库
+     登录 MySQL 后执行:
+       CREATE DATABASE jxc_db DEFAULT CHARACTER SET utf8mb4;
+       USE jxc_db;
+       SOURCE E:/jxc/deploy/sql/jxc_db.sql;
+     (或用 Navicat 等工具导入 jxc_db.sql)
+
+  2. 配置数据库连接
+     默认连接: localhost:3306/jxc_db, 用户 root, 密码 123456
+     如需修改, 在 deploy 目录下新建 application-dev.yml 覆盖配置,
+     或启动时加参数:
+       java -jar jxc-server.jar --spring.datasource.url=新地址 --spring.datasource.username=用户 --spring.datasource.password=密码
+
+  3. 启动后端
+     方式A: 双击 start.bat
+     方式B: 命令行
+       cd deploy
+       java -Dfile.encoding=UTF-8 -jar jxc-server.jar
+     启动后监听 8080 端口, 上下文路径 /jxc
+     上传文件保存在运行目录下的 uploads/ 子目录
+
+  4. 部署前端 (二选一)
+
+     方式A — Nginx 托管 (推荐, 生产环境):
+       将 web/dist 目录部署到 Nginx, nginx.conf 示例:
+
+       server {
+         listen       8088;
+         server_name  _;
+         root         /path/to/deploy/web/dist;
+         index        index.html;
+
+         # 前端路由 (hash 模式, 无需 try_files 兜底)
+         location / {
+         }
+
+         # 后端接口反代 (前端 baseURL = /jxc)
+         location /jxc/ {
+           proxy_pass http://127.0.0.1:8080/jxc/;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+         }
+       }
+       注: 80 端口被畅捷通 T+(Chanjet)占用, 改用 8088; 如需 80 端口请先停止 T+ Web 服务。
+
+     方式B — 后端直接托管 (简单测试):
+       将 web/dist 下的所有内容复制到 deploy/static/ 目录,
+       后端会自动以 /jxc/static/** 路径提供静态资源 (需配合 WebMvcConfig)。
+       访问 http://localhost:8080/jxc/static/index.html
+
+  5. 访问系统
+     Nginx 方式: http://localhost:8088  (或 http://服务器IP:8088)
+     后端托管:   http://localhost:8080/jxc/static/index.html
+     默认账号:   admin / admin123  (登录后请修改)
+
+【四、常用运维】
+  - 查看日志:   启动控制台直接输出 (logging.level.com.jxc=debug)
+  - 停止后端:   在启动窗口按 Ctrl+C
+  - 后台运行:   start /B javaw -jar jxc-server.jar  (关窗不停止)
+  - 修改端口:   java -jar jxc-server.jar --server.port=9090
+
+【五、技术栈】
+  后端: SpringBoot 2.7.18 + JDK 1.8 + MyBatis-Plus 3.5.3.1 + MySQL 8.0 + Druid + JWT
+  前端: Vue 2.6 + ElementUI 2.15 + Vue Router 3 + Vuex 3 + ECharts 5 + Axios

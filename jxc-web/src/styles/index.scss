@@ -1,0 +1,113 @@
+// 全局样式 —— 彻底禁止浏览器外层滚动
+html, body, #app {
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 100% !important;
+  width: 100% !important;
+  max-height: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", Arial, sans-serif;
+  background: #f0f2f5;
+}
+
+* { box-sizing: border-box; }
+
+/* ========== Element UI 容器强制高度链 ========== */
+.el-container {
+  height: 100% !important;
+}
+
+.el-aside {
+  overflow: hidden !important;
+}
+
+.el-header {
+  overflow: hidden !important;
+}
+
+/* ========== 滚动条美化(仅 .app-main 和 .sidebar-menu 显示细滚动条) ========== */
+.app-main,
+.sidebar-menu {
+  scrollbar-width: thin;           /* Firefox */
+  scrollbar-color: rgba(144, 147, 153, 0.5) transparent;
+}
+.app-main::-webkit-scrollbar,
+.sidebar-menu::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.app-main::-webkit-scrollbar-thumb,
+.sidebar-menu::-webkit-scrollbar-thumb {
+  background: rgba(144, 147, 153, 0.5);
+  border-radius: 3px;
+}
+.app-main::-webkit-scrollbar-thumb:hover,
+.sidebar-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(144, 147, 153, 0.8);
+}
+.app-main::-webkit-scrollbar-track,
+.sidebar-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ========== 公共业务类 ========== */
+.app-container {
+  padding: 16px;
+}
+
+.search-form {
+  margin-bottom: 12px;
+  /* 强制撑满父容器宽度,保证与下方表格左右对齐 */
+  width: 100%;
+  box-sizing: border-box;
+  /* 强制 inline 表单项不换行,搜索重置按钮和搜索框在同一行 */
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center;
+  justify-content: flex-start;
+}
+.search-form .el-form-item {
+  margin-right: 12px;
+  margin-left: 0 !important;
+  flex-shrink: 0;
+}
+/* 最后一个表单项(按钮组)推到最右,撑满整行 */
+.search-form .el-form-item:last-child {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+.search-form .el-form-item__label {
+  padding-right: 6px !important;
+  font-size: 13px;
+}
+
+.table-card {
+  background: #fff;
+  padding: 16px;
+  border-radius: 4px;
+}
+
+/* ElementUI fixed=right 列左侧分割线 */
+.el-table__fixed-right {
+  border-left: 1px solid #EBEEF5 !important;
+  box-shadow: -6px 0 6px -4px rgba(0, 0, 0, 0.12);
+}
+.el-table__fixed-right-patch {
+  border-left: 1px solid #EBEEF5 !important;
+}
+
+.table-toolbar {
+  margin-bottom: 12px;
+}
+
+.pagination-wrap {
+  margin-top: 16px;
+  text-align: right;
+}
+
+.dialog-footer {
+  text-align: right;
+}
+
+a { text-decoration: none; color: inherit; }

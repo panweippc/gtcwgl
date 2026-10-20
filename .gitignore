@@ -1,0 +1,32 @@
+# ============ 依赖 ============
+node_modules/
+jxc-web/node_modules/
+
+# ============ 构建产物 ============
+jxc-server/target/
+*.class
+*.jar
+*.war
+*.rar
+jxc-web/dist/
+deploy/web/
+deploy/jxc-server.jar
+
+# ============ 工具二进制 / 压缩包 ============
+tools/
+*.zip
+
+# ============ 运行时数据 ============
+jxc-server/uploads/
+uploads/
+
+# ============ IDE / Agent 配置 ============
+.vscode/
+.trae/
+.idea/
+*.iml
+
+# ============ 系统文件 ============
+.DS_Store
+Thumbs.db
+desktop.ini
