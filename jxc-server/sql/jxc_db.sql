@@ -150,6 +150,7 @@ CREATE TABLE `product` (
   `spec` VARCHAR(128) DEFAULT NULL COMMENT '规格',
   `unit` VARCHAR(32) DEFAULT NULL COMMENT '单位',
   `barcode` VARCHAR(64) DEFAULT NULL COMMENT '条形码',
+  `expire_date` DATE DEFAULT NULL COMMENT '保质期至(到期日)',
   `cost_price` DECIMAL(12,2) DEFAULT 0.00 COMMENT '成本价',
   `sale_price` DECIMAL(12,2) DEFAULT 0.00 COMMENT '销售价',
   `min_stock` INT DEFAULT 0 COMMENT '最低库存预警',

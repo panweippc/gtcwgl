@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * 商品实体
@@ -42,6 +43,9 @@ public class Product extends BaseEntity {
 
     /** 条形码 */
     private String barcode;
+
+    /** 保质期至(到期日) */
+    private LocalDate expireDate;
 
     /** 成本价 */
     private BigDecimal costPrice;

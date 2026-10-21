@@ -52,6 +52,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="barcode" label="条码" min-width="130" show-overflow-tooltip />
+        <el-table-column prop="expireDate" label="保质期至" min-width="120" align="center">
+          <template slot-scope="{ row }">{{ row.expireDate || '-' }}</template>
+        </el-table-column>
         <el-table-column label="成本价" width="100" align="right">
           <template slot-scope="{ row }">{{ formatMoney(row.costPrice) }}</template>
         </el-table-column>
@@ -143,6 +146,11 @@
           <el-col :span="12">
             <el-form-item label="条码" prop="barcode">
               <el-input v-model="form.barcode" placeholder="请输入条码" maxlength="50" :disabled="isView" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="保质期至" prop="expireDate">
+              <el-date-picker v-model="form.expireDate" type="date" value-format="yyyy-MM-dd" placeholder="选填,如 2027-01-01" :disabled="isView" style="width:100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -268,6 +276,7 @@ export default {
         bigUnit: '',
         conversionRate: undefined,
         barcode: '',
+        expireDate: '',
         costPrice: 0,
         salePrice: 0,
         minStock: 0,
@@ -403,6 +412,8 @@ export default {
           ? payload.categoryPath[payload.categoryPath.length - 1]
           : null
         delete payload.categoryPath
+        // 保质期至: 未选择时置空,避免传空字符串给后端
+        if (!payload.expireDate) payload.expireDate = null
         // 未填大单位时清空换算率
         if (!payload.bigUnit) {
           payload.conversionRate = null
